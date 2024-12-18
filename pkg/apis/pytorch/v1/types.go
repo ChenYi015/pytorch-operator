@@ -22,6 +22,12 @@ import (
 // +genclient
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=pytorchjob
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
+// +kubebuilder:subresource:status
+// +kubebuilder:subresource:scale:specpath=.spec.pytorchReplicaSpecs.Worker.replicas,statuspath=.status.replicaStatuses.Worker.active,selectorpath=.status.replicaStatuses.Worker.selector
+// +kubebuilder:printcolumn:name="State",type=string,JSONPath=`.status.conditions[-1:].type`
+// +kubebuilder:printcolumn:name="Age",type=date,JSONPath=`.metadata.creationTimestamp`
 
 // Represents a PyTorchJob resource.
 type PyTorchJob struct {
@@ -69,6 +75,11 @@ type PyTorchJobSpec struct {
 	//     "Worker": PyTorchReplicaSpec,
 	//   }
 	PyTorchReplicaSpecs map[PyTorchReplicaType]*common.ReplicaSpec `json:"pytorchReplicaSpecs"`
+
+	// Number of workers per node; supported values: [auto, cpu, gpu, int].
+	// For more, https://github.com/pytorch/pytorch/blob/26f7f470df64d90e092081e39507e4ac751f55d6/torch/distributed/run.py#L629-L658.
+	// Defaults to auto.
+	NprocPerNode *string `json:"nprocPerNode,omitempty"`
 }
 
 // PyTorchReplicaType is the type for PyTorchReplica. Can be one of "Master" or "Worker".
@@ -84,6 +95,7 @@ const (
 
 // +k8s:deepcopy-gen:interfaces=k8s.io/apimachinery/pkg/runtime.Object
 // +resource:path=pytorchjobs
+// +kubebuilder:object:root=true
 
 // PyTorchJobList is a list of PyTorchJobs.
 type PyTorchJobList struct {
