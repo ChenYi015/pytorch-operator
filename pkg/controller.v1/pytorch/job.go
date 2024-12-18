@@ -2,10 +2,12 @@ package pytorch
 
 import (
 	"fmt"
-	"github.com/kubeflow/pytorch-operator/pkg/util"
 	"reflect"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kubeflow/pytorch-operator/pkg/util"
 
 	log "github.com/sirupsen/logrus"
 	v1 "k8s.io/api/core/v1"
@@ -250,4 +252,23 @@ func getTotalFailedReplicas(job *pyv1.PyTorchJob) int32 {
 		totalFailedReplicas += job.Status.ReplicaStatuses[rtype].Failed
 	}
 	return totalFailedReplicas
+}
+
+func getNProcPerNode(job *pyv1.PyTorchJob) int {
+	if job.Spec.NprocPerNode == nil {
+		return 1
+	}
+
+	nProcPerNode, err := strconv.Atoi(*job.Spec.NprocPerNode)
+	if err != nil {
+		return 1
+	}
+
+	return nProcPerNode
+}
+
+func getWorldSize(job *pyv1.PyTorchJob) int {
+	totalReplicas := int(getTotalReplicas(job))
+	nProcPerNode := getNProcPerNode(job)
+	return totalReplicas * nProcPerNode
 }
